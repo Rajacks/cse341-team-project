@@ -1,0 +1,73 @@
+<%- include('./partials/header') %>
+
+<section class="trains-hero">
+  <h1>Bookings Administration</h1>
+  <p>View all recent passenger bookings dynamically hydrated via the API.</p>
+</section>
+
+<section class="trains-catalog">
+  <div class="trains-state" id="bookings-loading">Loading bookings...</div>
+  <div class="trains-state trains-error" id="bookings-error" hidden></div>
+  <div class="trains-grid" id="bookings-list"></div>
+
+  <!-- The Template block for Hydration -->
+  <template id="booking-card-template">
+    <article class="train-card schedule-card">
+      <header class="train-card-header">
+        <h2 data-field="name"></h2>
+        <span class="train-operator" data-field="class"></span>
+      </header>
+      <dl class="train-specs">
+        <div class="spec-item">
+          <dt>Email</dt>
+          <dd data-field="email"></dd>
+        </div>
+        <div class="spec-item">
+          <dt>Tickets</dt>
+          <dd data-field="tickets"></dd>
+        </div>
+      </dl>
+      <div class="schedule-days">
+        <strong>Date Booked:</strong>
+        <p data-field="date"></p>
+      </div>
+    </article>
+  </template>
+</section>
+
+<script>
+  // Client-side JavaScript to fetch and hydrate the page dynamically
+  document.addEventListener('DOMContentLoaded', async () => {
+    const loading = document.getElementById('bookings-loading');
+    const errorElement = document.getElementById('bookings-error');
+    const list = document.getElementById('bookings-list');
+    const template = document.getElementById('booking-card-template');
+
+    try {
+      const response = await fetch('/api/bookings');
+      if (!response.ok) throw new Error('Unable to load bookings.');
+      
+      const bookings = await response.json();
+      const fragment = document.createDocumentFragment();
+
+      bookings.forEach(booking => {
+        const card = template.content.cloneNode(true);
+        card.querySelector('[data-field="name"]').textContent = booking.passengerName;
+        card.querySelector('[data-field="class"]').textContent = booking.ticketClass + ' Class';
+        card.querySelector('[data-field="email"]').textContent = booking.passengerEmail;
+        card.querySelector('[data-field="tickets"]').textContent = booking.numTickets;
+        card.querySelector('[data-field="date"]').textContent = new Date(booking.dateBooked).toLocaleDateString();
+        fragment.append(card);
+      });
+
+      list.replaceChildren(fragment);
+      loading.hidden = true;
+    } catch (err) {
+      loading.hidden = true;
+      errorElement.hidden = false;
+      errorElement.textContent = err.message;
+    }
+  });
+</script>
+
+<%- include('./partials/footer') %>
