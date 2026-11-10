@@ -4,6 +4,7 @@ import confirmationPage from "./confirm.js";
 import listTripsPage from "./list.js";
 import tripDetailsPage from "./details.js";
 import { trainsPage } from "./trains.js";
+import schedulesPage from "./schedules-page.js";
 import { homePage, aboutPage, testErrorPage } from "./index.js";
 
 const router = Router();
@@ -16,6 +17,9 @@ router.get("/about", aboutPage);
 
 // Trains page
 router.get("/trains", trainsPage);
+
+// Schedules page
+router.get("/schedules", schedulesPage);
 
 // Trips list
 router.get("/trips", listTripsPage);

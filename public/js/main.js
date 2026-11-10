@@ -235,7 +235,73 @@ const hookTripsCatalog = async () => {
   }
 };
 
+// Schedules catalog
+const hookSchedulesCatalog = async () => {
+  const listEl = document.getElementById("schedules-list");
+  const templateEl = document.getElementById("schedule-card-template");
+  const loadingEl = document.getElementById("schedules-loading");
+  const errorEl = document.getElementById("schedules-error");
+
+  if (!listEl || !templateEl) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/schedules");
+
+    if (!response.ok) {
+      throw new Error(`Failed to load schedules (${response.status})`);
+    }
+
+    const payload = await response.json();
+    const schedules = payload.schedules || [];
+    const fragment = document.createDocumentFragment();
+
+    schedules.forEach((schedule) => {
+      const card = templateEl.content.cloneNode(true);
+
+      card.querySelector('[data-field="trip"]').textContent =
+        schedule.tripId.replaceAll("-", " ");
+
+      const statusEl = card.querySelector('[data-field="status"]');
+      statusEl.textContent = schedule.status ? "Active" : "Inactive";
+
+      card.querySelector('[data-field="departure"]').textContent =
+        schedule.departureTime;
+
+      card.querySelector('[data-field="arrival"]').textContent =
+        schedule.arrivalTime;
+
+      card.querySelector('[data-field="days"]').textContent =
+        schedule.daysOfWeek
+          .map((day) => day.charAt(0).toUpperCase() + day.slice(1))
+          .join(", ");
+
+      fragment.appendChild(card);
+    });
+
+    listEl.replaceChildren(fragment);
+
+    if (loadingEl) {
+      loadingEl.hidden = true;
+    }
+  } catch (error) {
+    console.error("Schedules API error:", error);
+
+    if (loadingEl) {
+      loadingEl.hidden = true;
+    }
+
+    if (errorEl) {
+      errorEl.hidden = false;
+      errorEl.textContent =
+        "Unable to load schedules right now. Please try again in a moment.";
+    }
+  }
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   hookTrainsCatalog();
   hookTripsCatalog();
+  hookSchedulesCatalog();
 });
