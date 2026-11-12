@@ -38,4 +38,7 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-export default bookingSchema;
+// The Fix: Compile the schema into a Mongoose Model before exporting
+const Booking = mongoose.model("Booking", bookingSchema);
+
+export default Booking;
