@@ -22,6 +22,9 @@ router.get("/trains", trainsPage);
 // Schedules page
 router.get("/schedules", schedulesPage);
 
+// Bookings page
+router.get("/bookings", bookingsAdminPage);
+
 // Bookings Admin page
 router.get("/bookings-admin", bookingsAdminPage);
 
