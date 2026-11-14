@@ -10,7 +10,8 @@ export const getAllBookingsApi = async (req, res) => {
     const bookings = await getAllBookings();
     return res.status(200).json(bookings);
   } catch (error) {
-    return res.status(500).json({ message: "Error retrieving bookings" });
+    console.error(error);
+    res.status(500).json({ message: "Error retrieving bookings" });
   }
 };
 
@@ -23,6 +24,7 @@ export const getBookingByIdApi = async (req, res) => {
     }
     return res.status(200).json(booking);
   } catch (error) {
-    return res.status(500).json({ message: "Error retrieving booking" });
+    console.error(error);
+    res.status(500).json({ message: "Error retrieving booking" });
   }
 };

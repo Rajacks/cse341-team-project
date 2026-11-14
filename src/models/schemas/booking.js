@@ -38,6 +38,5 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-const Booking = mongoose.model("Booking", bookingSchema);
-
-export default Booking;
+// The Fix: ONLY export the schema. The model compilation now happens in models/bookings.js
+export default bookingSchema;

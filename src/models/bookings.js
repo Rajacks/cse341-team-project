@@ -1,4 +1,8 @@
-import Booking from './schemas/booking.js';
+import mongoose from 'mongoose';
+import bookingSchema from './schemas/booking.js';
+
+// Register the model here, exactly as your instructor requested!
+const Booking = mongoose.model('Booking', bookingSchema);
 
 // Create a new booking
 export async function createBooking(bookingData) {
