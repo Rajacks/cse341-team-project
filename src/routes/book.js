@@ -8,7 +8,7 @@ const bookingPage = async (req, res) => {
     const schedule = await db.collection('schedules').findOne({ id: Number(scheduleId) });
     const trip = await db.collection('trips').findOne({ id: schedule.tripId });
     const ticketClasses = await db.collection('ticketClasses').find({}).toArray();
-    
+
     const ticketOptions = ticketClasses.map((ticketClass) => ({
         class: ticketClass.class,
         name: ticketClass.name,
@@ -27,7 +27,7 @@ const bookingPage = async (req, res) => {
 const processBookingRequest = async (req, res) => {
     try {
         const newBooking = await createBooking(req.body);
-        res.redirect(`/trips/confirmation/${newBooking._id}`);
+        return res.redirect(`/trips/confirmation/${newBooking._id}`);
     } catch (error) {
         // STRICT RUBRIC MATCH: Handle Mongoose Validation Errors with a 400 status
         if (error.name === 'ValidationError') {
@@ -36,7 +36,7 @@ const processBookingRequest = async (req, res) => {
         }
         // Generic fallback for other database errors
         console.error("Error creating booking:", error);
-        res.status(500).send("An error occurred while processing your booking. Please try again.");
+        return res.status(500).send("An error occurred while processing your booking. Please try again.");
     }
 };
 
