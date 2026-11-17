@@ -8,6 +8,8 @@ import schedulesPage from "./schedules-page.js";
 import bookingsAdminPage from "./bookings-admin-page.js";
 import { homePage, aboutPage, testErrorPage } from "./index.js";
 
+import { requirePageLogin, requirePageRole } from "../middleware/auth.js";
+
 const router = Router();
 
 // Home page
@@ -15,6 +17,36 @@ router.get("/", homePage);
 
 // About page
 router.get("/about", aboutPage);
+
+// Authentication pages
+router.get("/register", (req, res) => {
+  res.render("register", {
+    title: "Register",
+    error: null,
+  });
+});
+
+router.get("/login", (req, res) => {
+  res.render("login", {
+    title: "Login",
+    error: null,
+    registered: req.query.registered === "true",
+  });
+});
+
+// Protected user dashboard
+router.get("/dashboard", requirePageLogin, (req, res) => {
+  res.render("dashboard", {
+    title: "User Dashboard",
+  });
+});
+
+// Protected administrator dashboard
+router.get("/admin-dashboard", requirePageRole("admin"), (req, res) => {
+  res.render("admin-dashboard", {
+    title: "Admin Dashboard",
+  });
+});
 
 // Trains page
 router.get("/trains", trainsPage);
