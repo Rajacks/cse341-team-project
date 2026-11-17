@@ -3,12 +3,16 @@ import ejsRoutes from "./ejs-routes.js";
 import tripsApiRouter from "./trips-api.js";
 import schedulesApiRouter from "./schedules-api.js";
 import bookingsApiRouter from "./bookings-api.js";
+import authRouter from "./auth.js";
 import { trainsApi } from "./trains.js";
 
 const router = Router();
 
 // EJS frontend routes
 router.use("/", ejsRoutes);
+
+// Authentication routes
+router.use("/", authRouter);
 
 // Trips API
 router.use("/api/trips", tripsApiRouter);

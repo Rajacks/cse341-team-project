@@ -1,13 +1,15 @@
-import { afterAll, beforeAll, beforeEach, inject } from 'vitest';
-import { closeDb, connectToDb, getDb } from '../src/db/connect.js';
-import { initializeDatabase } from '../src/db/initialize.js';
+import { afterAll, beforeAll, beforeEach, inject } from "vitest";
+import { closeDb, connectToDb, getDb } from "../src/db/connect.js";
+import { initializeDatabase } from "../src/db/initialize.js";
+// Provide a test-only session secret.
+process.env.SESSION_SECRET ||= "test-only-session-secret-for-vitest";
 
-const connectionString = inject('MONGODB_TEST_URI');
+const connectionString = inject("MONGODB_TEST_URI");
 
 beforeAll(async () => {
   await connectToDb({
     connectionString,
-    databaseName: 'kizuna-rail-test'
+    databaseName: "kizuna-rail-test",
   });
 });
 

@@ -1,0 +1,47 @@
+
+<%- include("partials/header", { title: "Login" }) %>
+
+<div class="container">
+  <h1>Login to Kizuna Rail</h1>
+
+  <% if (error) { %>
+    <p class="error-message"><%= error %></p>
+  <% } %>
+
+  <% if (registered) { %>
+    <p class="success-message">
+      Registration successful! You can now log in.
+    </p>
+  <% } %>
+
+  <form action="/login" method="POST">
+    <div>
+      <label for="identifier">Username or Email</label>
+      <input
+        type="text"
+        id="identifier"
+        name="identifier"
+        required
+      />
+    </div>
+
+    <div>
+      <label for="password">Password</label>
+      <input
+        type="password"
+        id="password"
+        name="password"
+        required
+      />
+    </div>
+
+    <button type="submit">Login</button>
+  </form>
+
+  <p>
+    Don't have an account?
+    <a href="/register">Register here</a>.
+  </p>
+</div>
+
+<%- include("partials/footer") %>
