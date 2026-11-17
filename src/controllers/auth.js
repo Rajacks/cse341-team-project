@@ -174,7 +174,12 @@ export const loginUser = async (req, res) => {
           return;
         }
 
-        res.redirect("/dashboard");
+        // Feature Set 2: Redirect admins to the admin dashboard
+        if (populatedUser.role.name === "admin") {
+          res.redirect("/admin-dashboard");
+        } else {
+          res.redirect("/dashboard");
+        }
       });
     });
   } catch (error) {
