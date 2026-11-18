@@ -165,21 +165,17 @@ export const loginUser = async (req, res) => {
       req.session.save((saveError) => {
         if (saveError) {
           console.error("Session save error:", saveError);
-
-          res.status(500).render("login", {
+          return res.status(500).render("login", {
             title: "Login",
             error: "Unable to save your session. Please try again.",
           });
-
-          return;
         }
 
-        // Feature Set 2: Redirect admins to the admin dashboard
+        // Raymund's fix: Return single redirect
         if (populatedUser.role.name === "admin") {
-          res.redirect("/admin-dashboard");
-        } else {
-          res.redirect("/dashboard");
+          return res.redirect("/admin-dashboard");
         }
+        return res.redirect("/dashboard");
       });
     });
   } catch (error) {
@@ -201,7 +197,6 @@ export const logoutUser = (req, res) => {
     }
 
     res.clearCookie("connect.sid");
-
     return res.redirect("/login");
   });
 };

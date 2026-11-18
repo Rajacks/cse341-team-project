@@ -6,7 +6,7 @@
     <title><%= title %></title>
     <link rel="stylesheet" href="/css/main.css">
     <script src="/js/main.js"></script>
-    <% if (NODE_ENV.includes('dev')) { %>
+    <% if (typeof NODE_ENV !== 'undefined' && NODE_ENV.includes('dev')) { %>
         <script>
             // Get the current hostname and port from the browser
             const host = window.location.hostname;
@@ -39,16 +39,15 @@
                     <li><a href="/trains">Trains</a></li>
                     <li><a href="/about">About</a></li>
 
-                    <% if (user) { %>
+                    <% if (locals.user) { %>
                         <% if (user.role === "admin") { %>
-                            <li><a href="/admin-dashboard">Admin Dashboard</a></li>
+                            <li><a href="/admin-dashboard">Dashboard</a></li>
                         <% } else { %>
                             <li><a href="/dashboard">Dashboard</a></li>
                         <% } %>
-
                         <li>
-                            <form action="/logout" method="POST">
-                                <button type="submit">Logout</button>
+                            <form action="/logout" method="POST" style="display:inline;">
+                                <button type="submit" style="background:none;border:none;padding:0;font:inherit;cursor:pointer;text-decoration:underline;">Logout</button>
                             </form>
                         </li>
                     <% } else { %>
