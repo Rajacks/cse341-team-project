@@ -1,3 +1,4 @@
+
 import express from "express";
 import Path from "path";
 import { fileURLToPath } from "url";
@@ -11,7 +12,10 @@ const __dirname = Path.dirname(__filename);
 
 const app = express();
 
-const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || "production";
+const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || "development";
+
+console.log("NODE_ENV:", NODE_ENV);
+console.log("SESSION COOKIE SECURE:", NODE_ENV === "production");
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET is required.");
@@ -70,6 +74,8 @@ app.use((req, res, next) => {
 
 // Render the appropriate error page.
 app.use((err, req, res, next) => {
+  console.error("SERVER ERROR:", err);
+
   const status = err.status || 500;
   const template = status === 404 ? "404" : "500";
   const context = {
