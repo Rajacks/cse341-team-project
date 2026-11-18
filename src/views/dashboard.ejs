@@ -1,24 +1,59 @@
+<%- include('partials/header') %>
 
-<%- include("partials/header", { title: "User Dashboard" }) %>
+<div class="content">
+    <h1>User Dashboard</h1>
+    <p>Welcome back, <%= user.displayName %>!</p>
+    
+    <section class="account-info">
+        <h2>Account Information</h2>
+        <p><strong>Email:</strong> <%= user.email %></p>
+        <p><strong>Role:</strong> <%= user.role %></p>
+    </section>
 
-<div class="container">
-  <h1>Welcome to Kizuna Rail!</h1>
-
-  <p>
-    Welcome, <strong><%= user.displayName %></strong>!
-  </p>
-
-  <p>You are successfully logged in.</p>
-
-  <h2>Your Account</h2>
-
-  <p>Username: <%= user.username %></p>
-  <p>Email: <%= user.email %></p>
-  <p>Role: <%= user.role %></p>
-
-  <form action="/logout" method="POST">
-    <button type="submit">Log Out</button>
-  </form>
+    <section class="bookings">
+        <h2>Your Upcoming Trips</h2>
+        <div id="bookings-container">
+            <p>Loading your bookings...</p>
+        </div>
+    </section>
 </div>
 
-<%- include("partials/footer") %>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const container = document.getElementById("bookings-container");
+
+  try {
+    const response = await fetch("/api/bookings");
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch bookings");
+    }
+
+    const bookings = await response.json();
+
+    if (bookings.length === 0) {
+      container.textContent = "You have no upcoming trips booked.";
+      return;
+    }
+
+    const list = document.createElement("ul");
+    list.className = "booking-list";
+
+    bookings.forEach((booking) => {
+      const item = document.createElement("li");
+      // Fallback depending on how the backend sends the ID
+      const displayId = booking.bookingId || booking._id || "N/A";
+      item.textContent = `Booking ID: ${displayId} | Status: ${booking.status}`;
+      list.appendChild(item);
+    });
+
+    container.replaceChildren(list);
+
+  } catch (error) {
+    console.error("Error loading bookings:", error);
+    container.textContent = "Error loading your bookings. Please try again later.";
+  }
+});
+</script>
+
+<%- include('partials/footer') %>
