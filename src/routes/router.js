@@ -5,6 +5,7 @@ import schedulesApiRouter from "./schedules-api.js";
 import bookingsApiRouter from "./bookings-api.js";
 import authRouter from "./auth.js";
 import { trainsApi } from "./trains.js";
+import usersApiRouter from "./users-api.js";
 
 const router = Router();
 
@@ -25,5 +26,8 @@ router.use("/api/bookings", bookingsApiRouter);
 
 // Trains API
 router.get("/api/trains", trainsApi);
+
+// Users API
+router.use("/api/users", usersApiRouter);
 
 export default router;
