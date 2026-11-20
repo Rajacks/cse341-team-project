@@ -29,3 +29,33 @@ export async function createUser(userData) {
 export async function getAllUsers() {
   return User.find({}).populate("role", "name");
 }
+
+// Get all users without exposing password hashes.
+export async function getAllUsersSafe() {
+  return User.find({})
+    .select("-passwordHash")
+    .populate("role", "name");
+}
+
+// Update a user's permitted profile fields.
+export async function updateUserProfile(id, updates) {
+  return User.findByIdAndUpdate(id, updates, {
+    returnDocument: "after",
+    runValidators: true,
+  })
+    .select("-passwordHash")
+    .populate("role", "name");
+}
+
+// Delete a user by ID.
+export async function deleteUserById(id) {
+  return User.findByIdAndDelete(id);
+}
+
+
+// Find one user without exposing the password hash.
+export async function getUserByIdSafe(id) {
+  return User.findById(id)
+    .select("-passwordHash")
+    .populate("role", "name");
+}

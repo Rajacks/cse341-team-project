@@ -41,6 +41,13 @@ router.get("/dashboard", requirePageLogin, (req, res) => {
   });
 });
 
+// Protected user administration page
+router.get("/users-admin", requirePageLogin, (req, res) => {
+  res.render("users-admin", {
+    title: "User Administration",
+  });
+});
+
 // Protected administrator dashboard
 router.get("/admin-dashboard", requirePageRole("admin"), (req, res) => {
   res.render("admin-dashboard", {
