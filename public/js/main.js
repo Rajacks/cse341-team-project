@@ -107,6 +107,12 @@ const hookTripsCatalog = async () => {
   const loadingEl = document.getElementById("trips-loading");
   const errorEl = document.getElementById("trips-error");
   const emptyEl = document.getElementById("trips-empty");
+
+  const paginationEl = document.getElementById("trips-pagination");
+  const previousBtn = document.getElementById("trips-previous");
+  const nextBtn = document.getElementById("trips-next");
+  const pageInfo = document.getElementById("trips-page-info");
+
   const regionSelect = document.getElementById("region-filter");
   const seasonSelect = document.getElementById("season-filter");
 
@@ -114,125 +120,170 @@ const hookTripsCatalog = async () => {
     return;
   }
 
-  try {
-    const response = await fetch("/api/trips");
+  let currentPage = 1;
+  const limit = 10;
+  let currentTrips = [];
 
-    if (!response.ok) {
-      throw new Error(`Failed to load trips (${response.status})`);
-    }
+  const populateFilter = (select, values) => {
+    if (!select) return;
 
-    const payload = await response.json();
-    const trips = payload.trips || [];
+    const existingValues = new Set(
+      Array.from(select.options).map((option) => option.value),
+    );
 
-    // Populate region filter
-    const regions = [...new Set(trips.map((trip) => trip.region))].sort();
+    values.forEach((value) => {
+      if (!existingValues.has(value)) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value.charAt(0).toUpperCase() + value.slice(1);
 
-    regions.forEach((region) => {
-      const option = document.createElement("option");
-      option.value = region;
-      option.textContent = region.charAt(0).toUpperCase() + region.slice(1);
-      regionSelect.appendChild(option);
-    });
-
-    // Populate season filter
-    const seasons = [...new Set(trips.map((trip) => trip.bestSeason))].sort();
-
-    seasons.forEach((season) => {
-      const option = document.createElement("option");
-      option.value = season;
-      option.textContent = season.charAt(0).toUpperCase() + season.slice(1);
-      seasonSelect.appendChild(option);
-    });
-
-    // Render and filter trips
-    const renderTrips = () => {
-      const selectedRegion = regionSelect.value;
-      const selectedSeason = seasonSelect.value;
-
-      const filteredTrips = trips.filter((trip) => {
-        const matchesRegion =
-          selectedRegion === "all" || trip.region === selectedRegion;
-
-        const matchesSeason =
-          selectedSeason === "all" || trip.bestSeason === selectedSeason;
-
-        return matchesRegion && matchesSeason;
-      });
-
-      const fragment = document.createDocumentFragment();
-
-      filteredTrips.forEach((trip) => {
-        const card = templateEl.content.cloneNode(true);
-        const cardEl = card.querySelector(".route-card");
-
-        cardEl.classList.add(trip.region);
-
-        card.querySelector('[data-field="name"]').textContent = trip.name;
-        card.querySelector('[data-field="region"]').textContent = trip.region;
-
-        card.querySelector('[data-field="startStation"]').textContent =
-          trip.startStation;
-
-        card.querySelector('[data-field="endStation"]').textContent =
-          trip.endStation;
-
-        card.querySelector('[data-field="duration"]').textContent =
-          trip.duration;
-
-        card.querySelector('[data-field="distance"]').textContent =
-          trip.distance;
-
-        const seasonEl = card.querySelector('[data-field="season"]');
-        seasonEl.textContent = `Best in ${trip.bestSeason}`;
-        seasonEl.classList.add(`season-${trip.bestSeason}`);
-
-        card.querySelector('[data-field="description"]').textContent =
-          trip.description;
-
-        const highlightsEl = card.querySelector('[data-field="highlights"]');
-
-        trip.highlights.forEach((highlight) => {
-          const tag = document.createElement("span");
-          tag.className = "highlight-tag";
-          tag.textContent = highlight;
-          highlightsEl.appendChild(tag);
-        });
-
-        card.querySelector('[data-field="details-link"]').href =
-          `/trips/${trip.id}`;
-
-        fragment.appendChild(card);
-      });
-
-      listEl.replaceChildren(fragment);
-
-      if (emptyEl) {
-        emptyEl.hidden = filteredTrips.length > 0;
+        select.appendChild(option);
       }
-    };
+    });
+  };
 
-    // Filter without reloading the page
-    regionSelect.addEventListener("change", renderTrips);
-    seasonSelect.addEventListener("change", renderTrips);
+  const renderTrips = () => {
+    const selectedRegion = regionSelect?.value || "all";
+    const selectedSeason = seasonSelect?.value || "all";
 
-    renderTrips();
+    const filteredTrips = currentTrips.filter((trip) => {
+      const matchesRegion =
+        selectedRegion === "all" || trip.region === selectedRegion;
 
-    if (loadingEl) {
-      loadingEl.hidden = true;
+      const matchesSeason =
+        selectedSeason === "all" || trip.bestSeason === selectedSeason;
+
+      return matchesRegion && matchesSeason;
+    });
+
+    const fragment = document.createDocumentFragment();
+
+    filteredTrips.forEach((trip) => {
+      const card = templateEl.content.cloneNode(true);
+      const cardEl = card.querySelector(".route-card");
+
+      cardEl.classList.add(trip.region);
+
+      card.querySelector('[data-field="name"]').textContent = trip.name;
+      card.querySelector('[data-field="region"]').textContent = trip.region;
+
+      card.querySelector('[data-field="startStation"]').textContent =
+        trip.startStation;
+
+      card.querySelector('[data-field="endStation"]').textContent =
+        trip.endStation;
+
+      card.querySelector('[data-field="duration"]').textContent = trip.duration;
+
+      card.querySelector('[data-field="distance"]').textContent = trip.distance;
+
+      const seasonEl = card.querySelector('[data-field="season"]');
+      seasonEl.textContent = `Best in ${trip.bestSeason}`;
+      seasonEl.classList.add(`season-${trip.bestSeason}`);
+
+      card.querySelector('[data-field="description"]').textContent =
+        trip.description;
+
+      const highlightsEl = card.querySelector('[data-field="highlights"]');
+
+      trip.highlights.forEach((highlight) => {
+        const tag = document.createElement("span");
+        tag.className = "highlight-tag";
+        tag.textContent = highlight;
+        highlightsEl.appendChild(tag);
+      });
+
+      card.querySelector('[data-field="details-link"]').href =
+        `/trips/${trip.id}`;
+
+      fragment.appendChild(card);
+    });
+
+    listEl.replaceChildren(fragment);
+
+    if (emptyEl) {
+      emptyEl.hidden = filteredTrips.length > 0;
     }
-  } catch (error) {
-    console.error("Trips API error:", error);
+  };
 
-    if (loadingEl) {
-      loadingEl.hidden = true;
-    }
+  const loadTrips = async () => {
+    try {
+      if (loadingEl) {
+        loadingEl.hidden = false;
+      }
 
-    if (errorEl) {
-      errorEl.hidden = false;
-      errorEl.textContent =
-        "Unable to load trips right now. Please try again in a moment.";
+      if (errorEl) {
+        errorEl.hidden = true;
+      }
+
+      const response = await fetch(
+        `/api/trips?page=${currentPage}&limit=${limit}`,
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to load trips (${response.status})`);
+      }
+
+      const payload = await response.json();
+
+      currentTrips = payload.trips || [];
+      const pagination = payload.pagination;
+
+      populateFilter(
+        regionSelect,
+        currentTrips.map((trip) => trip.region),
+      );
+
+      populateFilter(
+        seasonSelect,
+        currentTrips.map((trip) => trip.bestSeason),
+      );
+
+      renderTrips();
+
+      if (pagination) {
+        paginationEl.hidden = pagination.totalPages <= 1;
+
+        previousBtn.disabled = !pagination.hasPreviousPage;
+        nextBtn.disabled = !pagination.hasNextPage;
+
+        pageInfo.textContent = `Page ${pagination.page} of ${pagination.totalPages}`;
+      }
+
+      if (loadingEl) {
+        loadingEl.hidden = true;
+      }
+    } catch (error) {
+      console.error("Trips API error:", error);
+
+      if (loadingEl) {
+        loadingEl.hidden = true;
+      }
+
+      if (errorEl) {
+        errorEl.hidden = false;
+        errorEl.textContent =
+          "Unable to load trips right now. Please try again in a moment.";
+      }
     }
-  }
+  };
+
+  regionSelect?.addEventListener("change", renderTrips);
+  seasonSelect?.addEventListener("change", renderTrips);
+
+  previousBtn.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      loadTrips();
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    currentPage++;
+    loadTrips();
+  });
+
+  loadTrips();
 };
 
 // Schedules catalog
