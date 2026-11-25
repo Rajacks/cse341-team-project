@@ -5,8 +5,41 @@ import {
 
 export const getAllTrips = async (req, res, next) => {
   try {
-    const trips = await findAllTrips();
-    return res.json({ trips });
+    const page = Number(req.query.page ?? 1);
+    const limit = Number(req.query.limit ?? 10);
+
+    if (
+      !Number.isInteger(page) ||
+      !Number.isInteger(limit) ||
+      page < 1 ||
+      limit < 1
+    ) {
+      return res.status(400).json({
+        message: "Page and limit must be positive integers.",
+      });
+    }
+
+    if (limit > 50) {
+      return res.status(400).json({
+        message: "Limit cannot exceed 50.",
+      });
+    }
+
+    const { trips, totalItems } = await findAllTrips(page, limit);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return res.json({
+      trips,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    });
   } catch (error) {
     return next(error);
   }

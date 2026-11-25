@@ -1,0 +1,169 @@
+openapi: 3.0.3
+
+info:
+  title: Kizuna Rail Trip API
+  description: API documentation for retrieving trips with pagination.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Trips
+    description: Trip listing and retrieval
+
+paths:
+  /api/trips:
+    get:
+      tags:
+        - Trips
+      summary: Get all trips
+      description: Returns a paginated list of trips.
+      parameters:
+        - name: page
+          in: query
+          description: Page number to retrieve. Defaults to 1.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+
+        - name: limit
+          in: query
+          description: Number of trips per page. Defaults to 10 and cannot exceed 50.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+
+      responses:
+        "200":
+          description: Trips retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trips:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Trip"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+
+        "400":
+          description: Invalid pagination parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/trips/{id}:
+    get:
+      tags:
+        - Trips
+      summary: Get a trip by ID
+      description: Retrieves a single trip using its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique trip identifier.
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Trip retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trip:
+                    $ref: "#/components/schemas/Trip"
+
+        "404":
+          description: Trip not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Trip:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: MongoDB document identifier.
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        region:
+          type: string
+        startStation:
+          type: string
+        endStation:
+          type: string
+        duration:
+          type: string
+        distance:
+          type: number
+          minimum: 0
+        highlights:
+          type: array
+          items:
+            type: string
+        bestSeason:
+          type: string
+        operatingMonths:
+          type: array
+          items:
+            type: integer
+        imageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalItems:
+          type: integer
+          example: 6
+        totalPages:
+          type: integer
+          example: 1
+        hasNextPage:
+          type: boolean
+          example: false
+        hasPreviousPage:
+          type: boolean
+          example: false
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Page and limit must be positive integers."
