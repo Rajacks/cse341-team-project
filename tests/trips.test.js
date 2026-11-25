@@ -105,3 +105,104 @@ describe("GET /api/trips pagination", () => {
     );
   });
 });
+
+describe("GET /api/trips search and filtering", () => {
+  test("filters trips by region", async () => {
+    const response = await request(app).get("/api/trips?region=central");
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toHaveLength(2);
+    expect(response.body.trips.every((trip) => trip.region === "central")).toBe(
+      true,
+    );
+    expect(response.body.pagination.totalItems).toBe(2);
+  });
+
+  test("filters trips by season", async () => {
+    const response = await request(app).get("/api/trips?season=autumn");
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toHaveLength(3);
+    expect(
+      response.body.trips.every((trip) => trip.bestSeason === "autumn"),
+    ).toBe(true);
+  });
+
+  test("searches trip names by keyword", async () => {
+    const response = await request(app).get("/api/trips?q=Sakura");
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toHaveLength(1);
+    expect(response.body.trips[0].name).toBe("Sakura Valley Limited");
+  });
+
+  test("searches trip descriptions by keyword", async () => {
+    const response = await request(app).get("/api/trips?q=cherry%20blossom");
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toHaveLength(1);
+    expect(response.body.trips[0].id).toBe("sakura-valley");
+  });
+
+  test("combines region and season filters", async () => {
+    const response = await request(app).get(
+      "/api/trips?region=central&season=autumn",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toHaveLength(2);
+    expect(response.body.pagination.totalItems).toBe(2);
+  });
+
+  test("paginates filtered results", async () => {
+    const response = await request(app).get(
+      "/api/trips?region=central&page=2&limit=1",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toHaveLength(1);
+    expect(response.body.pagination).toMatchObject({
+      page: 2,
+      limit: 1,
+      totalItems: 2,
+      totalPages: 2,
+      hasPreviousPage: true,
+      hasNextPage: false,
+    });
+  });
+
+  test("returns an empty array when no trips match", async () => {
+    const response = await request(app).get("/api/trips?q=NoMatchingTrip");
+
+    expect(response.status).toBe(200);
+    expect(response.body.trips).toEqual([]);
+    expect(response.body.pagination.totalItems).toBe(0);
+  });
+
+  test("rejects search parameters that are not strings", async () => {
+    const response = await request(app).get("/api/trips?q=first&q=second");
+
+    expect(response.status).toBe(400);
+  });
+
+  test("rejects search keywords longer than 100 characters", async () => {
+    const longKeyword = "a".repeat(101);
+    const response = await request(app).get(`/api/trips?q=${longKeyword}`);
+
+    expect(response.status).toBe(400);
+  });
+
+  test("rejects an unsupported region filter", async () => {
+    const response = await request(app).get("/api/trips?region=unknown-region");
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Invalid region filter.");
+  });
+
+  test("rejects an unsupported season filter", async () => {
+    const response = await request(app).get("/api/trips?season=unknown-season");
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Invalid season filter.");
+  });
+});

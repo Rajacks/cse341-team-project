@@ -2,7 +2,7 @@ openapi: 3.0.3
 
 info:
   title: Kizuna Rail Trip API
-  description: API documentation for retrieving trips with pagination.
+  description: API documentation for searching, filtering, and retrieving paginated trips.
   version: 1.0.0
 
 servers:
@@ -18,8 +18,8 @@ paths:
     get:
       tags:
         - Trips
-      summary: Get all trips
-      description: Returns a paginated list of trips.
+      summary: Get trips with search, filtering, and pagination
+      description: Returns trips matching the optional keyword, region, and season filters, with pagination.
       parameters:
         - name: page
           in: query
@@ -40,9 +40,36 @@ paths:
             maximum: 50
             default: 10
 
+        - name: q
+          in: query
+          description: Search trips by name or description.
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          example: Sakura
+
+        - name: region
+          in: query
+          description: Filter trips by region. Must match an existing trip region.
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          example: central
+
+        - name: season
+          in: query
+          description: Filter trips by best season. Must match an existing trip season.
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          example: autumn
+
       responses:
         "200":
-          description: Trips retrieved successfully.
+          description: Trips retrieved successfully. An empty array is returned when no trips match.
           content:
             application/json:
               schema:
@@ -52,11 +79,13 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Trip"
+                  query:
+                    $ref: "#/components/schemas/TripQuery"
                   pagination:
                     $ref: "#/components/schemas/Pagination"
 
         "400":
-          description: Invalid pagination parameters.
+          description: Invalid pagination, search, or filter parameters.
           content:
             application/json:
               schema:
@@ -138,6 +167,22 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    TripQuery:
+      type: object
+      properties:
+        q:
+          type: string
+          nullable: true
+          example: Sakura
+        region:
+          type: string
+          nullable: true
+          example: central
+        season:
+          type: string
+          nullable: true
+          example: autumn
 
     Pagination:
       type: object
