@@ -3,6 +3,15 @@
 <h1><%- title %></h1>
 
 <div id="filters">
+  <div class="search-box">
+    <label for="trip-search">Search trips:</label>
+    <input
+      type="search"
+      id="trip-search"
+      placeholder="Search by trip name or description..."
+    />
+  </div>
+
   Search by Region:
   <select id="region-filter">
     <option value="all">All Regions</option>
@@ -23,6 +32,14 @@
 </div>
 
 <div class="routes-grid" id="trips-list"></div>
+
+<div id="trips-pagination" class="trips-pagination" hidden>
+  <button id="trips-previous" type="button" disabled>Previous</button>
+
+  <span id="trips-page-info">Page 1 of 1</span>
+
+  <button id="trips-next" type="button" disabled>Next</button>
+</div>
 
 <template id="trip-card-template">
   <div class="route-card">
