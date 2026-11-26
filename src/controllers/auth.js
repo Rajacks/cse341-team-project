@@ -91,6 +91,8 @@ export const registerUser = async (req, res) => {
 
 // Log in an existing user.
 export const loginUser = async (req, res) => {
+  console.log("🔥 LOGIN ROUTE HIT! Request Body:", req.body);
+
   try {
     const { identifier, password } = req.body;
 
@@ -114,21 +116,27 @@ export const loginUser = async (req, res) => {
       : await getUserByUsername(normalizedIdentifier);
 
     if (!user) {
+      console.log("❌ User not found in database.");
       return res.status(401).render("login", {
         title: "Login",
         error: "Invalid username/email or password.",
       });
     }
 
-    // Verify the password.
+    console.log("✅ User found:", user.username);
+
+    // Verify the password securely using bcrypt.
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatches) {
+      console.log("❌ Password does not match.");
       return res.status(401).render("login", {
         title: "Login",
         error: "Invalid username/email or password.",
       });
     }
+
+    console.log("✅ Password matched successfully.");
 
     // Get the user's role name.
     const populatedUser = await user.populate("role", "name");
@@ -171,7 +179,9 @@ export const loginUser = async (req, res) => {
           });
         }
 
-        // Raymund's fix: Return single redirect
+        console.log("🎉 Session saved successfully! Redirecting...");
+
+        // Role-based redirect
         if (populatedUser.role.name === "admin") {
           return res.redirect("/admin-dashboard");
         }
@@ -179,7 +189,7 @@ export const loginUser = async (req, res) => {
       });
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("CRITICAL LOGIN CRASH:", error);
 
     return res.status(500).render("login", {
       title: "Login",
