@@ -2,13 +2,41 @@
 
 <section class="trains-hero">
   <h1>Bookings Administration</h1>
-  <p>View recent passenger bookings dynamically hydrated via the API.</p>
+  <p>View and filter passenger bookings dynamically hydrated via the API.</p>
 </section>
 
 <section class="trains-catalog">
+  <!-- Filter Controls -->
+  <form id="bookings-filter-form" class="bookings-filters" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 1.5rem;">
+    <div>
+      <label for="filter-ticket-class">Ticket Class</label>
+      <select id="filter-ticket-class" name="ticketClass">
+        <option value="">All Classes</option>
+        <option value="standard">Standard Class</option>
+        <option value="premium">Premium Class</option>
+        <option value="first">First Class</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="filter-start-date">Booked From</label>
+      <input type="date" id="filter-start-date" name="startDate" />
+    </div>
+
+    <div>
+      <label for="filter-end-date">Booked To</label>
+      <input type="date" id="filter-end-date" name="endDate" />
+    </div>
+
+    <div>
+      <button type="submit">Apply Filters</button>
+      <button type="button" id="reset-filters-btn">Reset</button>
+    </div>
+  </form>
+
   <div class="trains-state" id="bookings-loading">Loading bookings...</div>
   <div class="trains-state trains-error" id="bookings-error" hidden></div>
-  <div class="trains-state" id="bookings-empty" hidden>No bookings found.</div>
+  <div class="trains-state" id="bookings-empty" hidden>No bookings match the selected filters.</div>
   <div class="trains-grid" id="bookings-list"></div>
 
   <!-- Pagination Controls -->
@@ -45,6 +73,12 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
+    const filterForm = document.getElementById('bookings-filter-form');
+    const ticketClassSelect = document.getElementById('filter-ticket-class');
+    const startDateInput = document.getElementById('filter-start-date');
+    const endDateInput = document.getElementById('filter-end-date');
+    const resetBtn = document.getElementById('reset-filters-btn');
+
     const loading = document.getElementById('bookings-loading');
     const errorElement = document.getElementById('bookings-error');
     const emptyElement = document.getElementById('bookings-empty');
@@ -65,12 +99,29 @@
       paginationNav.hidden = true;
       list.replaceChildren();
 
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (ticketClassSelect.value) {
+        params.set('ticketClass', ticketClassSelect.value);
+      }
+      if (startDateInput.value) {
+        params.set('startDate', startDateInput.value);
+      }
+      if (endDateInput.value) {
+        params.set('endDate', endDateInput.value);
+      }
+
       try {
-        const response = await fetch(`/api/bookings?page=${page}&limit=${limit}`);
+        const response = await fetch(`/api/bookings?${params.toString()}`);
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.message || 'Unable to load bookings.');
+          const errorMessage =
+            result.errors?.[0]?.message || result.message || 'Unable to load bookings.';
+          throw new Error(errorMessage);
         }
 
         const { data: bookings, pagination } = result;
@@ -95,7 +146,7 @@
 
         list.replaceChildren(fragment);
 
-        pageInfo.textContent = `Page ${pagination.page} of ${pagination.totalPages} (${pagination.totalItems} total bookings)`;
+        pageInfo.textContent = `Page ${pagination.page} of ${pagination.totalPages} (${pagination.totalItems} matching bookings)`;
         prevBtn.disabled = !pagination.hasPreviousPage;
         nextBtn.disabled = !pagination.hasNextPage;
         paginationNav.hidden = false;
@@ -105,6 +156,18 @@
         errorElement.textContent = err.message;
       }
     }
+
+    filterForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      currentPage = 1;
+      loadBookings(currentPage);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      filterForm.reset();
+      currentPage = 1;
+      loadBookings(currentPage);
+    });
 
     prevBtn.addEventListener('click', () => {
       if (currentPage > 1) {

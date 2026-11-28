@@ -5,6 +5,7 @@ import {
 
 const allowedSortFields = ["dateBooked", "passengerName", "ticketClass", "numTickets"];
 const allowedOrders = ["asc", "desc"];
+const allowedTicketClasses = ["standard", "premium", "first"];
 
 const parsePositiveInteger = (value, defaultValue) => {
   if (value === undefined) {
@@ -19,7 +20,21 @@ const parsePositiveInteger = (value, defaultValue) => {
   return parsed;
 };
 
-// Return paginated bookings as JSON (filtered by user role)
+const parseIsoDate = (value, endOfDay = false) => {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return null;
+  }
+
+  const suffix = endOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z";
+  const parsed = new Date(`${value.trim()}${suffix}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+};
+
+// Return paginated and filtered bookings as JSON (filtered by user role)
 export const getAllBookingsApi = async (req, res) => {
   try {
     if (!req.session || !req.session.user) {
@@ -63,8 +78,81 @@ export const getAllBookingsApi = async (req, res) => {
     const order = orderParam === "asc" ? 1 : -1;
     const user = req.session.user;
 
-    // Apply role-based filtering in MongoDB so pagination counts stay accurate
+    // Build MongoDB filter object from validated parameters
     const filter = user.role === "admin" ? {} : { passengerEmail: user.email };
+    const appliedQuery = {
+      sort,
+      order: orderParam,
+    };
+
+    // Ticket class filter
+    if (req.query.ticketClass !== undefined && req.query.ticketClass !== "") {
+      if (typeof req.query.ticketClass !== "string") {
+        return res.status(400).json({
+          errors: [{ field: "ticketClass", message: "ticketClass must be a string." }],
+        });
+      }
+
+      const normalizedClass = req.query.ticketClass.trim().toLowerCase();
+      if (!allowedTicketClasses.includes(normalizedClass)) {
+        return res.status(400).json({
+          errors: [
+            {
+              field: "ticketClass",
+              message: `ticketClass must be one of: ${allowedTicketClasses.join(", ")}.`,
+            },
+          ],
+        });
+      }
+
+      filter.ticketClass = new RegExp(`^${normalizedClass}$`, "i");
+      appliedQuery.ticketClass = normalizedClass;
+    }
+
+    // Booking date range filter
+    let parsedStartDate = null;
+    let parsedEndDate = null;
+
+    if (req.query.startDate !== undefined && req.query.startDate !== "") {
+      parsedStartDate = parseIsoDate(req.query.startDate, false);
+      if (!parsedStartDate) {
+        return res.status(400).json({
+          errors: [{ field: "startDate", message: "startDate must be a valid YYYY-MM-DD date." }],
+        });
+      }
+      appliedQuery.startDate = req.query.startDate.trim();
+    }
+
+    if (req.query.endDate !== undefined && req.query.endDate !== "") {
+      parsedEndDate = parseIsoDate(req.query.endDate, true);
+      if (!parsedEndDate) {
+        return res.status(400).json({
+          errors: [{ field: "endDate", message: "endDate must be a valid YYYY-MM-DD date." }],
+        });
+      }
+      appliedQuery.endDate = req.query.endDate.trim();
+    }
+
+    if (parsedStartDate && parsedEndDate && parsedStartDate > parsedEndDate) {
+      return res.status(400).json({
+        errors: [
+          {
+            field: "dateRange",
+            message: "startDate cannot be after endDate.",
+          },
+        ],
+      });
+    }
+
+    if (parsedStartDate || parsedEndDate) {
+      filter.dateBooked = {};
+      if (parsedStartDate) {
+        filter.dateBooked.$gte = parsedStartDate;
+      }
+      if (parsedEndDate) {
+        filter.dateBooked.$lte = parsedEndDate;
+      }
+    }
 
     const { bookings, totalItems } = await getPaginatedBookings({
       filter,
@@ -78,6 +166,7 @@ export const getAllBookingsApi = async (req, res) => {
 
     return res.status(200).json({
       data: bookings,
+      query: appliedQuery,
       pagination: {
         page,
         limit,
