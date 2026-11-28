@@ -2,13 +2,21 @@
 
 <section class="trains-hero">
   <h1>Bookings Administration</h1>
-  <p>View all recent passenger bookings dynamically hydrated via the API.</p>
+  <p>View recent passenger bookings dynamically hydrated via the API.</p>
 </section>
 
 <section class="trains-catalog">
   <div class="trains-state" id="bookings-loading">Loading bookings...</div>
   <div class="trains-state trains-error" id="bookings-error" hidden></div>
+  <div class="trains-state" id="bookings-empty" hidden>No bookings found.</div>
   <div class="trains-grid" id="bookings-list"></div>
+
+  <!-- Pagination Controls -->
+  <nav class="pagination-controls" id="bookings-pagination" aria-label="Bookings pagination" hidden>
+    <button type="button" id="prev-page-btn">Previous</button>
+    <span id="page-info"></span>
+    <button type="button" id="next-page-btn">Next</button>
+  </nav>
 
   <!-- The Template block for Hydration -->
   <template id="booking-card-template">
@@ -36,37 +44,79 @@
 </section>
 
 <script>
-  // Client-side JavaScript to fetch and hydrate the page dynamically
-  document.addEventListener('DOMContentLoaded', async () => {
+  document.addEventListener('DOMContentLoaded', () => {
     const loading = document.getElementById('bookings-loading');
     const errorElement = document.getElementById('bookings-error');
+    const emptyElement = document.getElementById('bookings-empty');
     const list = document.getElementById('bookings-list');
     const template = document.getElementById('booking-card-template');
+    const paginationNav = document.getElementById('bookings-pagination');
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    const pageInfo = document.getElementById('page-info');
 
-    try {
-      const response = await fetch('/api/bookings');
-      if (!response.ok) throw new Error('Unable to load bookings.');
-      
-      const bookings = await response.json();
-      const fragment = document.createDocumentFragment();
+    let currentPage = 1;
+    const limit = 10;
 
-      bookings.forEach(booking => {
-        const card = template.content.cloneNode(true);
-        card.querySelector('[data-field="name"]').textContent = booking.passengerName;
-        card.querySelector('[data-field="class"]').textContent = booking.ticketClass + ' Class';
-        card.querySelector('[data-field="email"]').textContent = booking.passengerEmail;
-        card.querySelector('[data-field="tickets"]').textContent = booking.numTickets;
-        card.querySelector('[data-field="date"]').textContent = new Date(booking.dateBooked).toLocaleDateString();
-        fragment.append(card);
-      });
+    async function loadBookings(page) {
+      loading.hidden = false;
+      errorElement.hidden = true;
+      emptyElement.hidden = true;
+      paginationNav.hidden = true;
+      list.replaceChildren();
 
-      list.replaceChildren(fragment);
-      loading.hidden = true;
-    } catch (err) {
-      loading.hidden = true;
-      errorElement.hidden = false;
-      errorElement.textContent = err.message;
+      try {
+        const response = await fetch(`/api/bookings?page=${page}&limit=${limit}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Unable to load bookings.');
+        }
+
+        const { data: bookings, pagination } = result;
+        currentPage = pagination.page;
+        loading.hidden = true;
+
+        if (!bookings.length) {
+          emptyElement.hidden = false;
+          return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        bookings.forEach((booking) => {
+          const card = template.content.cloneNode(true);
+          card.querySelector('[data-field="name"]').textContent = booking.passengerName;
+          card.querySelector('[data-field="class"]').textContent = booking.ticketClass + ' Class';
+          card.querySelector('[data-field="email"]').textContent = booking.passengerEmail;
+          card.querySelector('[data-field="tickets"]').textContent = booking.numTickets;
+          card.querySelector('[data-field="date"]').textContent = new Date(booking.dateBooked).toLocaleDateString();
+          fragment.append(card);
+        });
+
+        list.replaceChildren(fragment);
+
+        pageInfo.textContent = `Page ${pagination.page} of ${pagination.totalPages} (${pagination.totalItems} total bookings)`;
+        prevBtn.disabled = !pagination.hasPreviousPage;
+        nextBtn.disabled = !pagination.hasNextPage;
+        paginationNav.hidden = false;
+      } catch (err) {
+        loading.hidden = true;
+        errorElement.hidden = false;
+        errorElement.textContent = err.message;
+      }
     }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        loadBookings(currentPage - 1);
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      loadBookings(currentPage + 1);
+    });
+
+    loadBookings(currentPage);
   });
 </script>
 
